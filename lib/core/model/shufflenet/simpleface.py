@@ -28,6 +28,12 @@ class SimpleFaceHead(tf.keras.Model):
         return output
 
 
+class RoIAlign(tf.keras.Model):
+    def __init__(self,kernel_initializer='glorot_normal'):
+        super(RoIAlign, self).__init__()
+
+
+
 class SimpleFace(tf.keras.Model):
 
     def __init__(self,kernel_initializer='glorot_normal'):
@@ -170,6 +176,7 @@ def calculate_loss(predict_keypoints, label_keypoints):
     reye_cls_predict =     predict_keypoints[:, 140]
     mouth_cls_predict =     predict_keypoints[:, 141]
     big_mouth_cls_predict = predict_keypoints[:, 142]
+
 
 
 

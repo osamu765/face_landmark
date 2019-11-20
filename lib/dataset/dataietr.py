@@ -104,8 +104,9 @@ class FaceKeypointDataIter():
 
 
 
-        self.eye_close_thres=0.02
+        self.eye_close_thres=0.01
         self.mouth_close_thres = 0.02
+
         self.big_mouth_open_thres = 0.08
         self.training_flag = training_flag
         self.shuffle = shuffle
@@ -141,6 +142,8 @@ class FaceKeypointDataIter():
 
     def balance(self,anns):
         res_anns = copy.deepcopy(anns)
+
+        fuck_eye=[]
 
         lar_count = 0
         for ann in anns:
@@ -189,10 +192,12 @@ class FaceKeypointDataIter():
                 if left_eye_close and not right_eye_close:
                     for i in range(40):
                         res_anns.append(ann)
+                        fuck_eye.append(ann)
                     lar_count += 1
                 if not left_eye_close and right_eye_close:
                     for i in range(40):
                         res_anns.append(ann)
+                        fuck_eye.append(ann)
                     lar_count += 1
 
             # elif ann['attr'] is not None:
@@ -210,7 +215,7 @@ class FaceKeypointDataIter():
         logger.info('after balanced the datasets contains %d samples' % (len(res_anns)))
 
         random.shuffle(res_anns)
-        return res_anns
+        return fuck_eye
 
     def parse_file(self,im_root_path,ann_file):
         '''
