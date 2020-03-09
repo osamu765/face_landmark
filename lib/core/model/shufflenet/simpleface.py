@@ -76,13 +76,13 @@ class SimpleFace(tf.keras.Model):
         out_put = self.head(multi_scale, training=False)
 
 
-        landmark=out_put[:,:136]
-        headpose=out_put[:,136:139]
-        cls=out_put[:,139:]
+        landmark=out_put[:,:1]
+        look=out_put[:,1:4]
+        #cls=out_put[:,139:]
 
         res={'landmark':landmark,
-             'headpose':headpose,
-             'cls':cls}
+             'look':look,
+             }
 
         return res
 
@@ -108,7 +108,7 @@ if __name__=='__main__':
     import time
     model = SimpleFace()
 
-    image=np.zeros(shape=(1,160,160,3),dtype=np.float32)
+    image=np.zeros(shape=(1,64,64,3),dtype=np.float32)
     x=model.inference(image)
     tf.saved_model.save(model,'./model/keypoints')
     start=time.time()
@@ -156,48 +156,16 @@ def l1(landmarks, labels):
 def calculate_loss(predict_keypoints, label_keypoints):
     
 
-    landmark_label =      label_keypoints[:, 0:136]
-    pose_label =          label_keypoints[:, 136:139]
-    leye_cls_label =      label_keypoints[:, 139]
-    reye_cls_label =      label_keypoints[:, 140]
-    mouth_cls_label =     label_keypoints[:, 141]
-    big_mouth_cls_label = label_keypoints[:, 142]
+    landmark_label =      label_keypoints[:, 0:1]
+    look_label =          label_keypoints[:, 1:4]
 
-
-    landmark_predict =     predict_keypoints[:, 0:136]
-    pose_predict =         predict_keypoints[:, 136:139]
-    leye_cls_predict =     predict_keypoints[:, 139]
-    reye_cls_predict =     predict_keypoints[:, 140]
-    mouth_cls_predict =     predict_keypoints[:, 141]
-    big_mouth_cls_predict = predict_keypoints[:, 142]
-
-
-
-
-
-
-
-
-
+    landmark_predict =     predict_keypoints[:, 0:1]
+    look_label =         predict_keypoints[:, 1:4]
 
 
     loss = _wing_loss(landmark_predict, landmark_label)
 
-    loss_pose = _mse(pose_predict, pose_label)
-
-
-
-    leye_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=leye_cls_predict,
-                                                                      labels=leye_cls_label) )
-    reye_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=reye_cls_predict,
-                                                                      labels=reye_cls_label))
-    mouth_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=mouth_cls_predict,
-                                                                       labels=mouth_cls_label))
-    mouth_loss_big = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=big_mouth_cls_predict,
-                                                                        labels=big_mouth_cls_label))
-    mouth_loss=mouth_loss+mouth_loss_big
-
-
+    loss_look = _mse(pose_predict, pose_label)
 
 
 
@@ -228,6 +196,6 @@ def calculate_loss(predict_keypoints, label_keypoints):
     # regularization_losses = tf.add_n(l2_loss, name='l1_loss')
 
 
-    return loss+loss_pose+leye_loss+reye_loss+mouth_loss
+    return loss+loss_look
 
 

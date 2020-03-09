@@ -221,12 +221,39 @@ class FaceKeypointDataIter():
         ann_info = data_info(im_root_path, ann_file)
         all_samples = ann_info.get_all_sample()
         self.raw_data_set_size=len(all_samples)
-        balanced_samples = self.balance(all_samples)
-        return balanced_samples
+        random.shuffle(all_samples)
+        #balanced_samples = self.balance(all_samples)
+        return all_samples
+    def preprocess(self, image, target_height, target_width, label=None):
 
-    def augmentationCropImage(self,img, bbox, joints=None, is_training=True):
+        ###sometimes use in objs detects
+        h, w, c = image.shape
 
-        bbox = np.array(bbox).reshape(4, ).astype(np.float32)
+        bimage = np.zeros(shape=[target_height, target_width, c], dtype=image.dtype) + np.array(cfg.DATA.pixel_means,
+                                                                                                dtype=image.dtype)
+
+        scale_y = target_height / h
+        scale_x = target_width / w
+
+        scale=min(scale_x,scale_y)
+
+        image = cv2.resize(image, None, fx=scale, fy=scale)
+
+        h_, w_, _ = image.shape
+
+        dx=(target_width-w_)//2
+        dy=(target_height-h_)//2
+        bimage[dy:h_+dy, dx:w_+dx, :] = image
+        
+        label[:, 0] = label[:, 0]*scale+dx
+        label[:, 1] = label[:, 1]*scale+dy
+
+
+        return bimage,label
+
+
+    def augmentationCropImage(self,img, joints=None, is_training=True):
+    
         add = max(img.shape[0], img.shape[1])
 
         bimg = cv2.copyMakeBorder(img, add, add, add, add, borderType=cv2.BORDER_CONSTANT, value=cfg.DATA.PIXEL_MEAN)
@@ -282,7 +309,6 @@ class FaceKeypointDataIter():
         ####customed here
         fname= dp['image_path']
         keypoints=dp['keypoints']
-        bbox =dp['bbox']
         # attr =dp['attr']
 
 
@@ -292,11 +318,11 @@ class FaceKeypointDataIter():
             image = cv2.imread(fname, cv2.IMREAD_COLOR)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             label = np.array(keypoints, dtype=np.float).reshape((-1, 2))
-            bbox = np.array(bbox)
+            #bbox = np.array(bbox)
 
             ### random crop and resize
-            crop_image, label = self.augmentationCropImage(image, bbox, label, is_training)
-
+            #crop_image, label = self.augmentationCropImage(image, bbox, label, is_training)
+            crop_image, label = self.preprocess(image,cfg.MODEL.hin, cfg.MODEL.win,label)
             if is_training:
 
                 if random.uniform(0, 1) > 0.5:
@@ -320,37 +346,7 @@ class FaceKeypointDataIter():
                 if random.uniform(0, 1) > 0.5:
                     crop_image = Padding_aug(crop_image, 0.3)
 
-
-            #######head pose
-            reprojectdst, euler_angle = get_head_pose(label, crop_image)
-            PRY = euler_angle.reshape([-1]).astype(np.float32) / 90.
-
-            ######cla_label
-            cla_label = np.zeros([4])
-            if np.sqrt(np.square(label[37, 0] - label[41, 0]) +
-                       np.square(label[37, 1] - label[41, 1])) / cfg.MODEL.hin <  self.eye_close_thres \
-                    or np.sqrt(np.square(label[38, 0] - label[40, 0]) +
-                               np.square(label[38, 1] - label[40, 1])) / cfg.MODEL.hin <  self.eye_close_thres:
-                cla_label[0] = 1
-            if np.sqrt(np.square(label[43, 0] - label[47, 0]) +
-                       np.square(label[43, 1] - label[47, 1])) / cfg.MODEL.hin <  self.eye_close_thres \
-                    or np.sqrt(np.square(label[44, 0] - label[46, 0]) +
-                               np.square(label[44, 1] - label[46, 1])) / cfg.MODEL.hin <  self.eye_close_thres:
-                cla_label[1] = 1
-            if np.sqrt(np.square(label[61, 0] - label[67, 0]) +
-                       np.square(label[61, 1] - label[67, 1])) / cfg.MODEL.hin < self.mouth_close_thres \
-                    or np.sqrt(np.square(label[62, 0] - label[66, 0]) +
-                               np.square(label[62, 1] - label[66, 1])) / cfg.MODEL.hin < self.mouth_close_thres \
-                    or np.sqrt(np.square(label[63, 0] - label[65, 0]) +
-                               np.square(label[63, 1] - label[65, 1])) / cfg.MODEL.hin < self.mouth_close_thres:
-                cla_label[2] = 1
-
-
-
-            ### mouth open big   1 mean true
-            if np.sqrt(np.square(label[62, 0] - label[66, 0]) +
-                               np.square(label[62, 1] - label[66, 1])) / cfg.MODEL.hin > self.big_mouth_open_thres:
-                cla_label[3] = 1
+            look = dp['look_vec']
 
             crop_image_height, crop_image_width, _ = crop_image.shape
 
@@ -363,9 +359,10 @@ class FaceKeypointDataIter():
             crop_image = crop_image.astype(np.float32)
 
             label = label.reshape([-1]).astype(np.float32)
-            cla_label = cla_label.astype(np.float32)
+            ##cla_label = cla_label.astype(np.float32)
+            look = look.astype(np.float32)
 
-            label = np.concatenate([label, PRY, cla_label], axis=0)
+            label = np.concatenate([label, PRY], axis=0)
 
 
         # else:

@@ -3,6 +3,8 @@ import random
 import numpy as np
 import json
 import traceback
+from glob import glob
+import cv2
 
 from tqdm import tqdm
 '''
@@ -10,10 +12,7 @@ i decide to merge more data from CelebA, the data anns will be complex, so json 
 '''
 
 
-
-
-
-data_dir='300W'      ########points to your director,300w
+data_dir='img'      ########points to your director,300w
 #celeba_data_dir='CELEBA'                      ########points to your director,CELEBA
 
 
@@ -51,30 +50,36 @@ val_list=pic_list[int(ratio*len(pic_list)):]
 # train_list=[x for x in pic_list if '300W/' not in x]
 # val_list=[x for x in pic_list if '300W/' in x]
 
-
 train_json_list=[]
 for pic in tqdm(train_list):
     one_image_ann={}
+    
+    img = cv2.imread(pic)
 
+    
+    def process_json_list(json_list):
+        ldmks = [eval(s) for s in json_list]
+        return np.array([(x, img.shape[0]-y, z) for (x,y,z) in ldmks])
     ### image_path
     one_image_ann['image_path']=pic
-
+    
     #### keypoints
-    pts=pic.rsplit('.',1)[0]+'.pts'
+    pts=pic.rsplit('.',1)[0]+'.json'
+    print(pts)
     if os.access(pic,os.F_OK) and  os.access(pts,os.F_OK):
         try:
-            tmp=[]
             with open(pts) as p_f:
-                labels=p_f.readlines()[3:-1]
-            for _one_p in labels:
-                xy = _one_p.rstrip().split(' ')
-                tmp.append([float(xy[0]),float(xy[1])])
+                data_file = json.load(p_f) 
+            ldmks_interior_margin = process_json_list( data_file['interior_margin_2d'])
+            ldmks_caruncle = process_json_list( data_file['caruncle_2d'])
+            ldmks_iris = process_json_list( data_file['iris_2d'])
+            eye_c = np.mean(ldmks_iris[:,:2], axis=0).astype(float)
+            
+            look_vec = list(eval(data_file['eye_details']['look_vec']))
+            
+            one_image_ann['keypoints'] = list(eye_c)
 
-            one_image_ann['keypoints'] = tmp
-
-            label = np.array(tmp).reshape((-1, 2))
-            bbox = [float(np.min(label[:, 0])), float(np.min(label[:, 1])), float(np.max(label[:, 0])), float(np.max(label[:, 1]))]
-            one_image_ann['bbox'] = bbox
+            one_image_ann['look_vec'] = (look_vec[:3])
             
             
             ### placeholder
@@ -86,7 +91,7 @@ for pic in tqdm(train_list):
             traceback.print_exc()
 
    
-
+print(train_json_list)
 with open(train_json,'w') as f:
     json.dump(train_json_list, f,indent=2)
 
@@ -102,19 +107,21 @@ for pic in tqdm(val_list):
     pts=pic.rsplit('.',1)[0]+'.pts'
     if os.access(pic,os.F_OK) and  os.access(pts,os.F_OK):
         try:
-            tmp=[]
             with open(pts) as p_f:
-                labels=p_f.readlines()[3:-1]
-            for _one_p in labels:
-                xy = _one_p.rstrip().split(' ')
-                tmp.append([float(xy[0]),float(xy[1])])
+                data_file = open(p_f)
+                
+            ldmks_interior_margin = process_json_list( data['interior_margin_2d'])
+            ldmks_caruncle = process_json_list( data['caruncle_2d'])
+            ldmks_iris = process_json_list( data['iris_2d'])
+            eye_c = np.mean(ldmks_iris[:,:2], axis=0).astype(int)
+            
+            look_vec = list(eval(data['eye_details']['look_vec']))
+            
+            one_image_ann['keypoints'] = eye_c
 
-            one_image_ann['keypoints'] = tmp
-
-
-            label = np.array(tmp).reshape((-1, 2))
-            bbox = [float(np.min(label[:, 0])), float(np.min(label[:, 1])), float(np.max(label[:, 0])), float(np.max(label[:, 1]))]
-            one_image_ann['bbox'] = bbox
+            one_image_ann['look_vec'] = look_vec
+            
+            
             ### placeholder
             one_image_ann['attr'] = None
 
