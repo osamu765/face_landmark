@@ -16,7 +16,7 @@ config.TRAIN.prefetch_size = 20
 config.TRAIN.num_gpu = 1
 config.TRAIN.batch_size = 128
 config.TRAIN.log_interval = 10                  ##10 iters for a log msg
-config.TRAIN.epoch = 250
+config.TRAIN.epoch = 1000
 
 config.TRAIN.lr_value_every_epoch = [0.00001,0.0001,0.001,0.0001,0.00001,0.000001,0.0000001]          ####lr policy
 config.TRAIN.lr_decay_every_epoch = [1,2,100,150,200,250]
@@ -27,9 +27,9 @@ config.TRAIN.opt='Adam'                                                     ##Ad
 
 config.MODEL = edict()
 config.MODEL.model_path = './model/'                                        ## save directory
-config.MODEL.hin = 160                                                      # input size during training , 128,160,   depends on
-config.MODEL.win = 160
-config.MODEL.out_channel=136+3+4    # output vector    68 points , 3 headpose ,4 cls params,(left eye, right eye, mouth, big mouth open)
+config.MODEL.hin = 64                                                      # input size during training , 128,160,   depends on
+config.MODEL.win = 64
+config.MODEL.out_channel=2+3    # output vector    68 points , 3 headpose ,4 cls params,(left eye, right eye, mouth, big mouth open)
 
 #### 'ShuffleNetV2_1.0' 'ShuffleNetV2_0.5' or MobileNetv2,
 config.MODEL.net_structure='ShuffleNetV2_0.75'
@@ -47,20 +47,10 @@ config.DATA.PIXEL_STD = [127., 127., 127.]
 config.DATA.base_extend_range=[0.2,0.3]                 ###extand
 config.DATA.scale_factor=[0.7,1.35]                     ###scales
 
-config.DATA.symmetry = [(0, 16), (1, 15), (2, 14), (3, 13), (4, 12), (5, 11), (6, 10), (7, 9), (8, 8),
-            (17, 26), (18, 25), (19, 24), (20, 23), (21, 22),
-            (31, 35), (32, 34),
-            (36, 45), (37, 44), (38, 43), (39, 42), (40, 47), (41, 46),
-            (48, 54), (49, 53), (50, 52), (55, 59), (56, 58), (60, 64), (61, 63), (65, 67)]
+config.DATA.symmetry = [(0, 0)]
 
 
-
-weights=[1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,                                    #####bouding
-       1.,1.,1.,1.,1.,1.,1.,1.,1.,                                                              #####nose
-       1.5,1.5,1.5,1.5,1.5,       1.5,1.5,1.5,1.5,1.5,                                          #####eyebows
-       1.5,1.5,1.5,1.5,1.5,1.5,    1.5,1.5,1.5,1.5,1.5,1.5,                                     ####eyes
-       1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.                              #####mouth
-       ]
+weights=[1.]
 weights_xy=[[x,x] for x in weights]
 
 config.DATA.weights = np.array(weights_xy,dtype=np.float32).reshape([-1])

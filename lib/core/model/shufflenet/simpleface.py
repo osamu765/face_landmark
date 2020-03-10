@@ -160,12 +160,12 @@ def calculate_loss(predict_keypoints, label_keypoints):
     look_label =          label_keypoints[:, 1:4]
 
     landmark_predict =     predict_keypoints[:, 0:1]
-    look_label =         predict_keypoints[:, 1:4]
+    look_predict =         predict_keypoints[:, 1:4]
 
 
     loss = _wing_loss(landmark_predict, landmark_label)
 
-    loss_look = _mse(pose_predict, pose_label)
+    loss_look = _mse(look_predict, look_label)
 
 
 

@@ -65,7 +65,6 @@ for pic in tqdm(train_list):
     
     #### keypoints
     pts=pic.rsplit('.',1)[0]+'.json'
-    print(pts)
     if os.access(pic,os.F_OK) and  os.access(pts,os.F_OK):
         try:
             with open(pts) as p_f:
@@ -99,28 +98,27 @@ with open(train_json,'w') as f:
 val_json_list=[]
 for pic in tqdm(val_list):
     one_image_ann={}
-
-    ### image_path
+    def process_json_list(json_list):
+        ldmks = [eval(s) for s in json_list]                               ### image_path
+        return np.array([(x, img.shape[0]-y, z) for (x,y,z) in ldmks])  
     one_image_ann['image_path']=pic
 
     #### keypoints
-    pts=pic.rsplit('.',1)[0]+'.pts'
+    pts=pic.rsplit('.',1)[0]+'.json'
     if os.access(pic,os.F_OK) and  os.access(pts,os.F_OK):
         try:
             with open(pts) as p_f:
-                data_file = open(p_f)
-                
-            ldmks_interior_margin = process_json_list( data['interior_margin_2d'])
-            ldmks_caruncle = process_json_list( data['caruncle_2d'])
-            ldmks_iris = process_json_list( data['iris_2d'])
-            eye_c = np.mean(ldmks_iris[:,:2], axis=0).astype(int)
+                data_file = json.load(p_f) 
+            ldmks_interior_margin = process_json_list( data_file['interior_margin_2d'])
+            ldmks_caruncle = process_json_list( data_file['caruncle_2d'])
+            ldmks_iris = process_json_list( data_file['iris_2d'])
+            eye_c = np.mean(ldmks_iris[:,:2], axis=0).astype(float)
             
-            look_vec = list(eval(data['eye_details']['look_vec']))
+            look_vec = list(eval(data_file['eye_details']['look_vec']))
             
-            one_image_ann['keypoints'] = eye_c
+            one_image_ann['keypoints'] = list(eye_c)
 
-            one_image_ann['look_vec'] = look_vec
-            
+            one_image_ann['look_vec'] = (look_vec[:3])
             
             ### placeholder
             one_image_ann['attr'] = None

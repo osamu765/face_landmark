@@ -34,7 +34,6 @@ class data_info(object):
     def load_anns(self):
         with open(self.ann_json, 'r') as f:
             train_json_list = json.load(f)
-
         self.metas=train_json_list
 
             ###some change can be made here
@@ -118,11 +117,6 @@ class FaceKeypointDataIter():
 
 
         self.lst = self.parse_file(img_root_path, ann_file)
-
-
-
-
-
 
 
     def __call__(self, *args, **kwargs):
@@ -229,7 +223,7 @@ class FaceKeypointDataIter():
         ###sometimes use in objs detects
         h, w, c = image.shape
 
-        bimage = np.zeros(shape=[target_height, target_width, c], dtype=image.dtype) + np.array(cfg.DATA.pixel_means,
+        bimage = np.zeros(shape=[target_height, target_width, c], dtype=image.dtype) + np.array(cfg.DATA.PIXEL_MEAN,
                                                                                                 dtype=image.dtype)
 
         scale_y = target_height / h
@@ -360,9 +354,9 @@ class FaceKeypointDataIter():
 
             label = label.reshape([-1]).astype(np.float32)
             ##cla_label = cla_label.astype(np.float32)
-            look = look.astype(np.float32)
+            look = np.array(look,dtype=np.float32)
 
-            label = np.concatenate([label, PRY], axis=0)
+            label = np.concatenate([label, look], axis=0)
 
 
         # else:
@@ -407,5 +401,4 @@ class FaceKeypointDataIter():
         #     weights = np.array([0, 1])
         #
         #     label = np.concatenate([label, weights], axis=0)
-
         return crop_image, label
